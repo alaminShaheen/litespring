@@ -20,7 +20,7 @@ public class ProductController {
     @Autowired
     private SearchService searchService;
 
-    @PostMapping("/product")
+    @PostMapping(basePath = "/product")
     @ResponseBody
     public AddProductResponse addProduct(@RequestBody AddProductRequest request) {
         System.out.println("Hello World");
@@ -35,13 +35,13 @@ public class ProductController {
         return addProductResponse;
     }
 
-    @GetMapping("/product/{id}")
+    @GetMapping(basePath = "/product/{id}")
     @ResponseBody
     public Product getProduct(@PathVariable("id") String id) {
         return productService.getProduct(id);
     }
 
-    @GetMapping("/products")
+    @GetMapping(basePath = "/products")
     @ResponseBody
     public SearchResponse search(@RequestParam("query") String query) {
         List<Product> productList = searchService.search(query);

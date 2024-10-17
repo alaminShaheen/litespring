@@ -2,8 +2,13 @@ package personal.litespring;
 
 
 import personal.litespring.annotation.*;
+import personal.litespring.enums.MethodType;
+import personal.litespring.models.ControllerMethod;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,24 +35,63 @@ public class ApplicationContext {
         try {
             beanCreates(classes);
             injectDependencies(classes);
-            registerControllers(classes);
+            DispatcherServlet dispatcherServlet = new DispatcherServlet(findControllerMethods(classes));
+            tomCatConfig.registerServlet(dispatcherServlet, dispatcherServlet.getClass().getSimpleName(), "/");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    protected void registerControllers(List<Class<?>> classes) throws Exception {
+    protected List<ControllerMethod> findControllerMethods(List<Class<?>> classes) {
+        List<ControllerMethod> controllerMethods = new ArrayList<>();
+
         for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(RestController.class)) {
-                Object instance = beanFactory.get(clazz.getSimpleName());
+                String controllerBasePath = "";
                 if (clazz.isAnnotationPresent(RequestMapping.class)) {
                     RequestMapping requestMapping = clazz.getAnnotation(RequestMapping.class);
-                    TomCatConfig.registerController(instance, requestMapping.basePath());
-                } else {
-                    TomCatConfig.registerController(instance, "");
+                    controllerBasePath = requestMapping.basePath();
+                }
+                for (Method method : clazz.getMethods()) {
+                    if (method.isAnnotationPresent(RequestMapping.class)) {
+                        RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+                        String fullUrl = Paths.get(controllerBasePath, requestMapping.basePath()).toString();
+                        ControllerMethod controllerMethod = ControllerMethod.builder()
+                                .methodType(requestMapping.type())
+                                .url(fullUrl)
+                                .method(method)
+                                .clazz(clazz)
+                                .instance(beanFactory.get(clazz.getSimpleName()))
+                                .build();
+                        controllerMethods.add(controllerMethod);
+                    } else if (method.isAnnotationPresent(GetMapping.class)) {
+                        GetMapping getMapping = method.getAnnotation(GetMapping.class);
+                        String fullUrl = Paths.get(controllerBasePath, getMapping.basePath()).toString();
+                        ControllerMethod controllerMethod = ControllerMethod.builder()
+                                .methodType(MethodType.GET)
+                                .url(fullUrl)
+                                .method(method)
+                                .clazz(clazz)
+                                .instance(beanFactory.get(clazz.getSimpleName()))
+                                .build();
+                        controllerMethods.add(controllerMethod);
+                    } else if (method.isAnnotationPresent(PostMapping.class)) {
+                        PostMapping postMapping = method.getAnnotation(PostMapping.class);
+                        String fullUrl = Paths.get(controllerBasePath, postMapping.basePath()).toString();
+                        ControllerMethod controllerMethod = ControllerMethod.builder()
+                                .methodType(MethodType.POST)
+                                .url(fullUrl)
+                                .method(method)
+                                .clazz(clazz)
+                                .instance(beanFactory.get(clazz.getSimpleName()))
+                                .build();
+                        controllerMethods.add(controllerMethod);
+                    }
                 }
             }
         }
+
+        return controllerMethods;
     }
 
     private void injectDependencies(List<Class<?>> classes) throws IllegalAccessException {

@@ -14,12 +14,12 @@ public class SearchController {
     @Autowired
     private SearchService searchService;
 
-    @GetMapping(value = "/product/{id}")
+    @GetMapping(basePath = "/product/{id}")
     public Product searchProduct(@PathVariable("id") String id) {
         return productController.getProduct(id);
     }
 
-    @GetMapping(value = "/products")
+    @GetMapping(basePath = "/products")
     public SearchResponse searchProducts(@RequestParam("query") String query) {
         return productController.search(query);
     }
