@@ -13,8 +13,6 @@ public class UrlMatcher {
     public static boolean matchUrl(String partialUrl, String fullUrlPattern) {
         // Convert fullUrlPattern with path variables to regex
         String regexPattern = convertToRegex(partialUrl);
-        System.out.println("partialUrl = " + partialUrl);
-        System.out.println("fullUrlPattern = " + fullUrlPattern);
 
         // Create a regex pattern from the full URL
         Pattern pattern = Pattern.compile(regexPattern);

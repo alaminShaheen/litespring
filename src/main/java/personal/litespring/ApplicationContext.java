@@ -5,6 +5,7 @@ import personal.litespring.annotation.*;
 import personal.litespring.enums.MethodType;
 import personal.litespring.models.ControllerMethod;
 
+import javax.servlet.Filter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
@@ -33,13 +34,26 @@ public class ApplicationContext {
 
     protected void createSpringContainer(List<Class<?>> classes) {
         try {
-            beanCreates(classes);
+            createBeans(classes);
             injectDependencies(classes);
-            DispatcherServlet dispatcherServlet = new DispatcherServlet(findControllerMethods(classes));
+            List<ControllerMethod> controllerMethods = findControllerMethods(classes);
+            DispatcherServlet dispatcherServlet = new DispatcherServlet(controllerMethods);
+            tomCatConfig.addFilters(findFilters(classes));
+            tomCatConfig.start();
             tomCatConfig.registerServlet(dispatcherServlet, dispatcherServlet.getClass().getSimpleName(), "/");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    protected List<Filter> findFilters(List<Class<?>> classes) {
+        List<Filter> filters = new ArrayList<>();
+        for (Class<?> clazz : classes) {
+            if (clazz.isAnnotationPresent(Component.class) && Filter.class.isAssignableFrom(clazz)) {
+                filters.add((Filter) beanFactory.get(clazz.getSimpleName()));
+            }
+        }
+        return filters;
     }
 
     protected List<ControllerMethod> findControllerMethods(List<Class<?>> classes) {
@@ -118,7 +132,7 @@ public class ApplicationContext {
         }
     }
 
-    private void beanCreates(List<Class<?>> classes) throws Exception {
+    private void createBeans(List<Class<?>> classes) throws Exception {
         for (Class<?> clazz : classes) {
             // check if the desired annotation is present in the class
             if (clazz.isAnnotationPresent(Component.class)) {

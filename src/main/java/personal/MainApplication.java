@@ -7,13 +7,10 @@ import personal.models.Product;
 import personal.service.ProductService;
 import personal.service.SearchService;
 
-import java.util.List;
-
 @PackageScan(scanPackages = {"personal"})
 public class MainApplication {
 
     public static void main(String[] args) throws Exception {
-
         ApplicationContext applicationContext = LiteSpringApplication.run(MainApplication.class);
 
         ProductService productService = (ProductService) applicationContext.getBean(ProductService.class);
@@ -30,12 +27,6 @@ public class MainApplication {
         Product product3 = new Product();
         product3.setName("Samsung Galaxy S24");
         productService.addProduct(product3);
-
-        List<Product> productList = searchService.search("iphone");
-        for(Product product : productList) {
-            System.out.println("product = " + product);
-        }
-
     }
 }
 

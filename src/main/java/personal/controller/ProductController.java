@@ -23,7 +23,6 @@ public class ProductController {
     @PostMapping(basePath = "/product")
     @ResponseBody
     public AddProductResponse addProduct(@RequestBody AddProductRequest request) {
-        System.out.println("Hello World");
         Product product = new Product();
         product.setName(request.getName());
 

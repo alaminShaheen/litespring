@@ -4,9 +4,13 @@ import org.apache.catalina.Context;
 import org.apache.catalina.Host;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 
+import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import java.io.File;
+import java.util.List;
 
 public class TomCatConfig {
     private static final String contextPath = "";
@@ -18,24 +22,20 @@ public class TomCatConfig {
     }
 
     private void initTomcat(int port) {
-        try {
-            tomcat = new Tomcat();
-            tomcat.setPort(port);
-            // Ensures that the default HTTP connector (which binds Tomcat to a port and listens for HTTP requests) is created and initialized
-            tomcat.getConnector();
+        tomcat = new Tomcat();
+        tomcat.setPort(port);
+        tomcat.getConnector();
+        String docBase = new File(".").getAbsolutePath();
+        context = tomcat.addContext(contextPath, docBase);
+    }
 
+    protected void start() {
+        try {
             // Create a host
             Host host = tomcat.getHost();
             host.setName("localhost");
             host.setAppBase("webapps");
-
             tomcat.start();
-            // get absolute path of current file
-            String docBase = new File(".").getAbsolutePath();
-
-            // contextPath is the URL path where the application is accessed (e.g., "/app")
-            // docBase is the directory that contains the application's static files and resources.
-            context = tomcat.addContext(contextPath, docBase);
         } catch (LifecycleException e) {
             throw new RuntimeException(e);
         }
@@ -44,5 +44,21 @@ public class TomCatConfig {
     protected void registerServlet(Object instance, String className, String urlMapping) {
         tomcat.addServlet(contextPath, className, (HttpServlet) instance);
         context.addServletMappingDecoded(urlMapping, className);
+    }
+
+    protected void addFilters(List<Filter> filters) {
+        for(Filter filter : filters) {
+            FilterDef filterDef = new FilterDef();
+            filterDef.setFilter(filter);
+            filterDef.setFilterName(filter.getClass().getSimpleName());
+            context.addFilterDef(filterDef);
+
+
+            // Create filter mappings
+            FilterMap filterMap = new FilterMap();
+            filterMap.setFilterName(filter.getClass().getSimpleName());
+            filterMap.addURLPattern("/*");
+            context.addFilterMap(filterMap);
+        }
     }
 }
