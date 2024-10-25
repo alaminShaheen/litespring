@@ -11,8 +11,7 @@ LiteSpring is a lightweight, custom-built Java framework inspired by Java Spring
   - [Path Variables](#path-variables)
   - [Custom Filters](#custom-filters)
 - [Annotations](#annotations)
-- [Contributing](#contributing)
-- [License](#license)
+- [Usage](#usage)
 
 
 
@@ -76,14 +75,14 @@ Annotations are used to define the behavior of various components, services, and
 Define your API endpoints with controller classes using `@RestController` and `@RequestMapping` annotations. `@RestController` annotates the `ProductController` class as a controller so that it can receive HTPP requests. The `@RequestMapping` annotation sets the base path for the `ProductController` as `/api/products`.
 ```
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api")
 public class ProductController {
 
-    @GetMapping("/{id}")
+    @GetMapping("/products")
     @ResponseBody
-    public Product getProduct(@PathVariable String id) {
-        // Logic to fetch product by id
-        return productService.getProductById(id);
+    public Product getProducts() {
+        // Logic to fetch all products
+        return productService.getProducts();
     }
 }
 ```
@@ -102,20 +101,19 @@ public class SecureController {
     }
 }
 ```
-Path Variables
+### Path Variables
 Path variables like /api/products/{id} are automatically extracted and passed as method arguments.
-
-java
-Copy code
+```
 @GetMapping("/{id}")
 public Product getProduct(@PathVariable String id) {
     // Fetch product by id
 }
-Custom Filters
-Add filters to handle request pre-processing, such as validating authentication tokens.
+```
 
-java
-Copy code
+### Custom Filters
+Add filters to handle request pre-processing, such as validating authentication tokens or for handling logging.
+
+```
 public class AuthenticationFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -123,3 +121,105 @@ public class AuthenticationFilter implements Filter {
         chain.doFilter(request, response); // Continue if authenticated
     }
 }
+```
+
+### Method Mapping
+
+`@GetMapping` is used to handle HTTP GET requests. It’s typically used for fetching resources from the server.
+
+```
+@RestController
+public class MyController {
+
+    @GetMapping("/hello")
+    public String sayHello() {
+        return "Hello, World!";
+    }
+}
+```
+
+
+`@PostMapping` is used to handle HTTP POST requests. It’s generally used to submit data to the server.
+
+```
+@RestController
+public class MyController {
+
+    @PostMapping("/users")
+    public User createUser(@RequestBody User user) {
+        // Logic to save a new user
+        return userService.saveUser(user);
+    }
+}
+```
+
+We can combine `@PathVariable`, `@RequestParam`, and `@RequestBody` with these mappings to handle dynamic URLs and request data.
+
+Below is an example of the `@RequestParam` annotation for extracting route parameter for the path `/search?name=samsung`
+```
+@RestController
+public class MyController {
+
+    @GetMapping("/search")
+    public List<User> searchUsers(@RequestParam String name) {
+        // Logic to search users by name
+        return userService.searchUsers(name);
+    }
+}
+```
+
+Below is an example of the `@PathVariable` annotation for extracting the value of `id` from the URI path `/users/{id}`
+```
+@RestController
+public class MyController {
+
+    @GetMapping("/users/{id}")
+    public User getUserById(@PathVariable String id) {
+        // Logic to fetch user by id
+        return userService.getUser(id);
+    }
+}
+```
+
+We can also use the `@RequestBody` annotation for sending request body along with HTTP POST request
+```
+@RestController
+public class MyController {
+
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        // Logic to create a user
+        return new ResponseEntity<>(userService.saveUser(user), HttpStatus.CREATED);
+    }
+}
+```
+
+
+`@Component` is a Spring annotation used to declare a class as a Spring-managed bean. When you annotate a class with `@Component`, Spring automatically detects it during classpath scanning and registers it as a bean in the Spring application context.
+```
+@Component
+public class UserService {
+    public User getUser(String id) {
+        // Logic to get user by id
+        return new User(id, "John Doe");
+    }
+}
+```
+Once the UserService class is annotated with @Component, it can be automatically injected into other classes as a dependency using `@Autowired`. `@Autowired` is used to automatically inject `@Component` dependencies into a class. It tells Spring to automatically resolve and inject the required bean into the field.
+
+In the example below, an instance of the `UserService` is injected into `MyController`.
+```
+@RestController
+public class MyController {
+
+    @Autowired
+    private UserService userService;  // UserService will be automatically injected by Spring
+
+    @GetMapping("/users/{id}")
+    public User getUserById(@PathVariable String id) {
+        return userService.getUser(id);
+    }
+}
+```
+
+
